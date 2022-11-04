@@ -22,7 +22,7 @@ from fast_api_als.quicksight.s3_helper import s3_helper_client
 from fast_api_als.utils.sqs_utils import sqs_helper_session
 
 router = APIRouter()
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 """
 Add proper logging and exception handling.
 
@@ -38,7 +38,8 @@ async def submit(file: Request, apikey: APIKey = Depends(get_api_key)):
     
     if not db_helper_session.verify_api_key(apikey):
         # throw proper fastpi.HTTPException
-        pass
+        logging.error(f'Invalid API key {apikey}')
+        raise HTTPException(status_code=403, detail='Invalid API Key')
     
     body = await file.body()
     body = str(body, 'utf-8')
@@ -60,7 +61,11 @@ async def submit(file: Request, apikey: APIKey = Depends(get_api_key)):
             "code": "1_INVALID_XML",
             "message": "Error occured while parsing XML"
         }
-    
+    t2 = [int(time.time() * 1000.0)]
+    time_taken = t2-t1
+    logging.info(f'xml parsing time: {time_taken}')
+    logging.info('xml parsing successful')
+
     lead_hash = calculate_lead_hash(obj)
 
     # check if adf xml is valid
@@ -75,14 +80,19 @@ async def submit(file: Request, apikey: APIKey = Depends(get_api_key)):
             "code": validation_code,
             "message": validation_message
         }
+    t3 = [int(time.time() * 1000.0)]
+    time_taken = t3-t2
+    logging.info(f'xml validation time: {time_taken}')
+    logging.info('xml validated')
 
     # check if vendor is available here
     dealer_available = True if obj['adf']['prospect'].get('vendor', None) else False
     email, phone, last_name = get_contact_details(obj)
     make = obj['adf']['prospect']['vehicle']['make']
     model = obj['adf']['prospect']['vehicle']['model']
-
-
+    t4 = [int(time.time() * 1000.0)]
+    time_taken = t4-t3
+    logging.info(f'vendor availability checking time: {time_taken}')
     fetched_oem_data = {}
 
     # check if 3PL is making a duplicate call or it is a duplicate lead
@@ -120,6 +130,9 @@ async def submit(file: Request, apikey: APIKey = Depends(get_api_key)):
             "message": "OEM data not found"
         }
     oem_threshold = float(fetched_oem_data['threshold'])
+    t5 = [int(time.time() * 1000.0)]
+    time_taken = t5-t4
+    logging.info(f'duplicate call or duplicate lead checking time: {time_taken}')
 
     # if dealer is not available then find nearest dealer
     if not dealer_available:
@@ -214,5 +227,6 @@ async def submit(file: Request, apikey: APIKey = Depends(get_api_key)):
     time_taken = (int(time.time() * 1000.0) - start)
 
     response_message = f"{result} Response Time : {time_taken} ms"
-
+    logger.info(response_message)
+    
     return response_body
