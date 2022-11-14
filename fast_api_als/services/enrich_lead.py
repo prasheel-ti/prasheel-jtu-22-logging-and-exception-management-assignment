@@ -16,7 +16,6 @@ def get_enriched_lead_json(adf_json: dict) -> dict:
     type_check = isinstance(dict, adf_json)
 
     if not type_check:
-        logging.error("Invalid input type")
         raise TypeError("Invalid input type")
 
     value = dict()

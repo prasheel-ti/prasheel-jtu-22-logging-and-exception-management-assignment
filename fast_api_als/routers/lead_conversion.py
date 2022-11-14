@@ -49,7 +49,6 @@ async def submit(file: Request, token: str = Depends(get_token)):
 
     if 'lead_uuid' not in body or 'converted' not in body:
         # throw proper HTTPException
-        logging.error(f'lead uuid or converted missing in Request: {file}')
         raise HTTPException(status_code=400, detail='lead uuid or converted missing in Request')
         
     lead_uuid = body['lead_uuid']
@@ -58,7 +57,6 @@ async def submit(file: Request, token: str = Depends(get_token)):
     oem, role = get_user_role(token)
     if role != "OEM":
         # throw proper HTTPException
-        logging.error(f'Unauthorized user. Expected OEM found {role}')
         raise HTTPException(status_code=403, detail='Unauthorized user')
 
     is_updated, item = db_helper_session.update_lead_conversion(lead_uuid, oem, converted)
@@ -71,5 +69,4 @@ async def submit(file: Request, token: str = Depends(get_token)):
         }
     else:
         # throw proper HTTPException
-        logging.error('Lead conversion not updated')
         raise HTTPException(status_code=400, detail='Lead conversion not updated')

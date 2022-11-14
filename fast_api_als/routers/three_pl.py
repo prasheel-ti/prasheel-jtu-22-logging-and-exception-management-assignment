@@ -17,7 +17,6 @@ async def reset_authkey(request: Request, token: str = Depends(get_token)):
     body = json.loads(body)
     provider, role = get_user_role(token)
     if role != "ADMIN" and (role != "3PL"):
-        logging.error(f'Unauthorized role to reset authkey {request}')
         raise HTTPException(status_code=403, detail='Unauthorized role to reset authkey')
     if role == "ADMIN":
         provider = body['3pl']
@@ -36,7 +35,6 @@ async def view_authkey(request: Request, token: str = Depends(get_token)):
     provider, role = get_user_role(token)
 
     if role != "ADMIN" and role != "3PL":
-        logging.error(f'Unauthorized role to view authkey {request}')
         raise HTTPException(status_code=403, detail='Unauthorized role to view authkey')
     if role == "ADMIN":
         provider = body['3pl']
