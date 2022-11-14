@@ -16,6 +16,7 @@ router = APIRouter()
 """
 write proper logging and exception handling
 """
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 
 def get_quicksight_data(lead_uuid, item):
     """
@@ -37,6 +38,7 @@ def get_quicksight_data(lead_uuid, item):
         "3pl": item.get('3pl', 'unknown'),
         "oem_responded": 1
     }
+    logging.info(f'quicksight data generated successfully for lead uuid {lead_uuid}')
     return data, f"{item['make']}/1_{int(time.time())}_{lead_uuid}"
 
 
@@ -47,7 +49,7 @@ async def submit(file: Request, token: str = Depends(get_token)):
 
     if 'lead_uuid' not in body or 'converted' not in body:
         # throw proper HTTPException
-        pass
+        raise HTTPException(status_code=400, detail='lead uuid or converted missing in Request')
         
     lead_uuid = body['lead_uuid']
     converted = body['converted']
@@ -55,7 +57,7 @@ async def submit(file: Request, token: str = Depends(get_token)):
     oem, role = get_user_role(token)
     if role != "OEM":
         # throw proper HTTPException
-        pass
+        raise HTTPException(status_code=403, detail='Unauthorized user')
 
     is_updated, item = db_helper_session.update_lead_conversion(lead_uuid, oem, converted)
     if is_updated:
@@ -67,4 +69,4 @@ async def submit(file: Request, token: str = Depends(get_token)):
         }
     else:
         # throw proper HTTPException
-        pass
+        raise HTTPException(status_code=400, detail='Lead conversion not updated')
